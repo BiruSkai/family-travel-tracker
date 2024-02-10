@@ -1,120 +1,74 @@
-CREATE TABLE student (
-  id SERIAL PRIMARY KEY,
-  first_name TEXT,
-  last_name TEXT
-);
+-- Table: public.countries
 
--- One to One --
-CREATE TABLE contact_detail (
-  id INTEGER REFERENCES student(id) UNIQUE,
-  tel TEXT,
-  address TEXT
-);
+-- DROP TABLE IF EXISTS public.countries;
 
--- Data --
-INSERT INTO student (first_name, last_name)
-VALUES ('Angela', 'Yu');
-INSERT INTO contact_detail (id, tel, address)
-VALUES (1, '+123456789', '123 App Brewery Road');
+CREATE TABLE IF NOT EXISTS public.countries
+(
+    id integer NOT NULL DEFAULT nextval('countries_id_seq'::regclass),
+    country_code character(3) COLLATE pg_catalog."default",
+    country_name character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT countries_pkey PRIMARY KEY (id)
+)
 
--- Join --
-SELECT * 
-FROM student
-JOIN contact_detail
-ON student.id = contact_detail.id
+TABLESPACE pg_default;
 
+ALTER TABLE IF EXISTS public.countries
+    OWNER to postgres;
 
--- Many to One --
-CREATE TABLE homework_submission (
-  id SERIAL PRIMARY KEY,
-  mark INTEGER,
-  student_id INTEGER REFERENCES student(id)
-);
+-- Table: public.users
 
--- Data --
-INSERT INTO homework_submission (mark, student_id)
-VALUES (98, 1), (87, 1), (88, 1)
+-- DROP TABLE IF EXISTS public.users;
 
--- Join --
-SELECT *
-FROM student
-JOIN homework_submission
-ON student.id = student_id
+CREATE TABLE IF NOT EXISTS public.users
+(
+    id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass),
+    name character varying(15) COLLATE pg_catalog."default",
+    color character varying(15) COLLATE pg_catalog."default",
+    CONSTRAINT users_pkey PRIMARY KEY (id)
+)
 
-SELECT student.id, first_name, last_name, mark
-FROM student
-JOIN homework_submission
-ON student.id = student_id
+TABLESPACE pg_default;
 
--- Many to Many --
-CREATE TABLE class (
-  id SERIAL PRIMARY KEY,
-  title VARCHAR(45)
-);
+ALTER TABLE IF EXISTS public.users
+    OWNER to postgres;
 
-CREATE TABLE enrollment (
-  student_id INTEGER REFERENCES student(id),
-  class_id INTEGER REFERENCES class(id),
-  PRIMARY KEY (student_id, class_id)
-);
+-- Table: public.users_visitedcountries
 
--- Data --
-INSERT INTO student (first_name, last_name)
-VALUES ('Jack', 'Bauer');
+-- DROP TABLE IF EXISTS public.users_visitedcountries;
 
-INSERT INTO class (title)
-VALUES ('English Literature'), ('Maths'), ('Physics');
+CREATE TABLE IF NOT EXISTS public.users_visitedcountries
+(
+    user_id integer NOT NULL,
+    country_code character(3) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT users_visitedcountries_pkey PRIMARY KEY (user_id, country_code),
+    CONSTRAINT users_visitedcountries_country_code_fkey FOREIGN KEY (country_code)
+        REFERENCES public.visited_countries (country_code) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT users_visitedcountries_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
 
-INSERT INTO enrollment (student_id, class_id ) VALUES (1, 1), (1, 2);
-INSERT INTO enrollment (student_id ,class_id) VALUES (2, 2), (2, 3);
+TABLESPACE pg_default;
 
--- Join --
-SELECT *
-FROM enrollment 
-JOIN student ON student.id = enrollment.student_id
-JOIN class ON class.id = enrollment.class_id;
+ALTER TABLE IF EXISTS public.users_visitedcountries
+    OWNER to postgres;
 
-SELECT student.id AS id, first_name, last_name, title
-FROM enrollment 
-JOIN student ON student.id = enrollment.student_id
-JOIN class ON class.id = enrollment.class_id;
+-- Table: public.visited_countries
 
--- ALIAS --
-SELECT s.id AS id, first_name, last_name, title
-FROM enrollment AS e
-JOIN student AS s ON s.id = e.student_id
-JOIN class AS c ON c.id = e.class_id;
+-- DROP TABLE IF EXISTS public.visited_countries;
 
+CREATE TABLE IF NOT EXISTS public.visited_countries
+(
+    id integer NOT NULL DEFAULT nextval('visited_countries_id_seq'::regclass),
+    country_code character(2) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT visited_countries_pkey PRIMARY KEY (id),
+    CONSTRAINT visited_countries_country_code_key UNIQUE (country_code)
+)
 
-SELECT s.id AS id, first_name, last_name, title
-FROM enrollment e
-JOIN student s ON s.id = e.student_id
-JOIN class c ON c.id = e.class_id;
+TABLESPACE pg_default;
 
-
--- EXERCISE SOLUTION AND SETUP --
-
-DROP TABLE IF EXISTS visited_countries, users;
-
-CREATE TABLE users(
-id SERIAL PRIMARY KEY,
-name VARCHAR(15) UNIQUE NOT NULL,
-color VARCHAR(15)
-);
-
-CREATE TABLE visited_countries(
-id SERIAL PRIMARY KEY,
-country_code CHAR(2) NOT NULL,
-user_id INTEGER REFERENCES users(id)
-);
-
-INSERT INTO users (name, color)
-VALUES ('Angela', 'teal'), ('Jack', 'powderblue');
-
-INSERT INTO visited_countries (country_code, user_id)
-VALUES ('FR', 1), ('GB', 1), ('CA', 2), ('FR', 2 );
-
-SELECT *
-FROM visited_countries
-JOIN users
-ON users.id = user_id;
+ALTER TABLE IF EXISTS public.visited_countries
+    OWNER to postgres;
